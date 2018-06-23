@@ -16,7 +16,6 @@ api = {
         }
 
 
-
 def _format_date(thedate):
     try:
         year = int(thedate[:4])
@@ -25,7 +24,7 @@ def _format_date(thedate):
         return None
 
     if not 2000 <= year <= datetime.date.today().year:
-        print('Invalid year value : %d' % year)
+        print('Invalid year range : %d' % year)
         return None
 
     try:
@@ -42,6 +41,7 @@ def _format_date(thedate):
         print('Invalid month range : %s' % month)
         return None
     return datetime.date(year, month, 1)
+
 
 def consume_paginate(session, uri):
     """ Consume pagination and yield every items """
@@ -88,6 +88,7 @@ class clicrdv():
         self.create_new_agenda_entries = False
         self.clic_agenda = []
         self.google_agenda = {}
+        self.filter_date = None
         self.stats = {
                 'found_clic_agenda_entries': 0,
                 }
@@ -120,9 +121,8 @@ class clicrdv():
         '''
         appointments = consume_paginate(self.ses, api[self.inst]['baseurl'] +
                                         '/groups/' + self.group_id +
-#                                        '/appointments.json?include_past=1' +
-                                        '/appointments.json?sort=start')
-#                                        '&sort=start')
+                                        '/appointments.json?include_past=1' +
+                                        '&sort=start')
         for entry in appointments:
             self.clic_agenda += [entry]
             self.stats['found_clic_agenda_entries'] += 1
@@ -136,6 +136,7 @@ class clicrdv():
 
     def filter_clic_appointments(self, to_date):
         print(to_date)
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -153,13 +154,13 @@ def main():
     clic.create_new_agenda_entries = args.Force
 
     if args.date:
-        filter_date = _format_date(args.date[0])
+        clic.filter_date = _format_date(args.date[0])
 
     print('Opening session to ClicRDV %s instance...' % clic_instance)
     clic.clic_session_open(auth)
     if clic.ses is not None:
-        #clic.get_clic_appointments()
-        clic.filter_clic_appointments(filter_date)
+        # clic.get_clic_appointments()
+        clic.filter_clic_appointments(clic.filter_date)
         clic.print_clic_appointments()
     else:
         return
