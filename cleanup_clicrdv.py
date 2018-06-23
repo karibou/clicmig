@@ -86,7 +86,7 @@ class clicrdv():
         self.tz = 'Europe/Paris'
         self.inst = inst
         self.create_new_agenda_entries = False
-        self.clic_agenda = []
+        self.clic_appointments = []
         self.google_agenda = {}
         self.filter_date = None
         self.stats = {
@@ -124,18 +124,22 @@ class clicrdv():
                                         '/appointments.json?include_past=1' +
                                         '&sort=start')
         for entry in appointments:
-            self.clic_agenda += [entry]
+            self.clic_appointments += [entry]
             self.stats['found_clic_agenda_entries'] += 1
         return
 
     def print_clic_appointments(self):
-        for entry in self.clic_agenda:
+        for entry in self.clic_appointments:
             print("start: %s\tend: %s\tid: %s" % (entry['start'],
                                                   entry['end'],
                                                   entry['id']))
 
     def filter_clic_appointments(self, to_date):
-        print(to_date)
+        for entry in self.clic_appointments:
+            (year, month, day) = map(int, entry['start'].split()[0].split('-'))
+            entry_date = datetime.date(year, month, day)
+            if entry_date < to_date:
+                self.clic_appointments.remove(entry)
 
 
 def main():
@@ -151,17 +155,20 @@ def main():
     api[clic_instance]['apikey'] = auth['apikey']
 
     clic = clicrdv(clic_instance)
-    clic.create_new_agenda_entries = args.Force
+    clic.delete_appointments = args.Force
 
     if args.date:
         clic.filter_date = _format_date(args.date[0])
+    else:
+        clic.filter_date = datetime.date.today()
 
     print('Opening session to ClicRDV %s instance...' % clic_instance)
     clic.clic_session_open(auth)
     if clic.ses is not None:
-        # clic.get_clic_appointments()
+        clic.get_clic_appointments()
         clic.filter_clic_appointments(clic.filter_date)
-        clic.print_clic_appointments()
+        if clic.delete_appointments:
+            clic.print_clic_appointments()
     else:
         return
 

@@ -307,7 +307,7 @@ class CleanupClicrdvTests(unittest.TestCase):
     @patch('cleanup_clicrdv.requests.session')
     def test_consume_paginate_url_one_param(self, ses):
         '''
-        test consume_paginate with GET that returns less than one page
+        test consume_paginate with url that has no parm
         '''
         ses.request.return_value = MagicMock()
         ses.request.return_value.raise_for_status.return_value = None
@@ -323,7 +323,7 @@ class CleanupClicrdvTests(unittest.TestCase):
     @patch('cleanup_clicrdv.requests.session')
     def test_consume_paginate_url_two_params(self, ses):
         '''
-        test consume_paginate with GET that returns less than one page
+        test consume_paginate with url that already has one param
         '''
         ses.request.return_value = MagicMock()
         ses.request.return_value.raise_for_status.return_value = None
@@ -335,3 +335,81 @@ class CleanupClicrdvTests(unittest.TestCase):
         self.assertEquals(len(res), 26)
         ses.request.assert_called_with('GET',
                                        'http://localhost?par1&startIndex=26')
+
+    @patch('cleanup_clicrdv.consume_paginate')
+    def test_get_clic_appointments_ok(self, consume):
+        '''
+        test get_clic_apointments
+        '''
+        consume.return_value = ['entry1', 'entry2', 'entry3']
+
+        clic = cleanup_clicrdv.clicrdv('prod')
+        clic.group_id = '1'
+        clic.get_clic_appointments()
+        self.assertEquals(len(clic.clic_appointments), 3)
+
+    @patch('cleanup_clicrdv.clicrdv.print_clic_appointments')
+    @patch('cleanup_clicrdv.clicrdv.filter_clic_appointments')
+    @patch('cleanup_clicrdv.clicrdv.get_clic_appointments')
+    @patch('cleanup_clicrdv.argparse.ArgumentParser.parse_args')
+    @patch('cleanup_clicrdv.get_clicrdv_creds')
+    @patch('migclic.requests.session')
+    def test_main_with_force(self, sess, getcreds, args, getappts,
+                             filterappts, printappts):
+        '''
+        Test main logic with -F option
+        '''
+
+        getcreds.return_value = self.auth
+        self.args.Force = True
+        self.args.date = None
+        args.return_value = self.args
+        session = MagicMock()
+        session.status_code = 200
+        json_return = {
+                'pro': {
+                    'group_id': 'deadbeef',
+                    },
+                }
+        sess.return_value.post.return_value = session
+        sess.return_value.post.return_value.json.return_value = json_return
+
+        cleanup_clicrdv.main()
+        getcreds.assert_called_once()
+        sess.assert_called_once()
+        getappts.assert_called_once()
+        filterappts.assert_called_once()
+        printappts.assert_called_once()
+
+    @patch('cleanup_clicrdv.clicrdv.print_clic_appointments')
+    @patch('cleanup_clicrdv.clicrdv.filter_clic_appointments')
+    @patch('cleanup_clicrdv.clicrdv.get_clic_appointments')
+    @patch('cleanup_clicrdv.argparse.ArgumentParser.parse_args')
+    @patch('cleanup_clicrdv.get_clicrdv_creds')
+    @patch('migclic.requests.session')
+    def test_main_without_force(self, sess, getcreds, args, getappts,
+                                filterappts, printappts):
+        '''
+        Test main logic without the -F option
+        '''
+
+        getcreds.return_value = self.auth
+        self.args.Force = False
+        self.args.date = None
+        args.return_value = self.args
+        session = MagicMock()
+        session.status_code = 200
+        json_return = {
+                'pro': {
+                    'group_id': 'deadbeef',
+                    },
+                }
+        sess.return_value.post.return_value = session
+        sess.return_value.post.return_value.json.return_value = json_return
+
+        cleanup_clicrdv.main()
+        getcreds.assert_called_once()
+        sess.assert_called_once()
+        getappts.assert_called_once()
+        filterappts.assert_called_once()
+        printappts.assert_not_called()
