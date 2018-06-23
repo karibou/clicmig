@@ -1,14 +1,11 @@
 #!/usr/bin/python3
 
-import httplib2
 import os
-import datetime
 import requests
 import hashlib
 import getpass
 import argparse
 
-from apiclient import discovery, errors
 
 api = {
         'prod': {
@@ -21,11 +18,12 @@ api = {
 def _date_before(date_1, date_2):
     return True
 
+
 def consume_paginate(session, uri):
     """ Consume pagination and yield every items """
     response = session.request("GET", uri)
     response.raise_for_status()
-    rec_total = records = response.json().get('totalRecords')
+    rec_total = response.json().get('totalRecords')
     index = 0
     while index < rec_total:
         for item in response.json()['records']:
@@ -37,6 +35,7 @@ def consume_paginate(session, uri):
         else:
             response = session.request("GET", uri+'?startIndex=%d' % index)
         response.raise_for_status()
+
 
 def get_clicrdv_creds():
     '''
@@ -96,8 +95,9 @@ class clicrdv():
         Get existing ClicRDV entries that will be deleted
         '''
         appointments = consume_paginate(self.ses, api[self.inst]['baseurl'] +
-                            '/groups/' + self.group_id +
-                            '/appointments.json?include_past=1&sort=start')
+                                        '/groups/' + self.group_id +
+                                        '/appointments.json?include_past=1' +
+                                        '&sort=start')
         for entry in appointments:
             self.clic_agenda += [entry]
             self.stats['found_clic_agenda_entries'] += 1
@@ -105,7 +105,10 @@ class clicrdv():
 
     def print_clic_appointments(self):
         for entry in self.clic_agenda:
-            print("start: %s\tend: %s\tid: %s"% (entry['start'], entry['end'], entry['id']))
+            print("start: %s\tend: %s\tid: %s" % (entry['start'],
+                                                  entry['end'],
+                                                  entry['id']))
+
 
 def main():
     parser = argparse.ArgumentParser()
