@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import os
+import datetime
 import requests
 import hashlib
 import getpass
@@ -15,9 +16,32 @@ api = {
         }
 
 
-def _date_before(date_1, date_2):
-    return True
 
+def _format_date(thedate):
+    try:
+        year = int(thedate[:4])
+    except ValueError:
+        print('Invalid year format : %s' % thedate[:4])
+        return None
+
+    if not 2000 <= year <= datetime.date.today().year:
+        print('Invalid year value : %d' % year)
+        return None
+
+    try:
+        month = thedate[4:6]
+        if month:
+            month = int(month)
+        else:
+            month = 1
+    except ValueError:
+        print('Invalid month format : %s' % thedate[4:6])
+        return None
+
+    if month not in range(13):
+        print('Invalid month range : %s' % month)
+        return None
+    return datetime.date(year, month, 1)
 
 def consume_paginate(session, uri):
     """ Consume pagination and yield every items """
@@ -96,8 +120,9 @@ class clicrdv():
         '''
         appointments = consume_paginate(self.ses, api[self.inst]['baseurl'] +
                                         '/groups/' + self.group_id +
-                                        '/appointments.json?include_past=1' +
-                                        '&sort=start')
+#                                        '/appointments.json?include_past=1' +
+                                        '/appointments.json?sort=start')
+#                                        '&sort=start')
         for entry in appointments:
             self.clic_agenda += [entry]
             self.stats['found_clic_agenda_entries'] += 1
@@ -109,6 +134,8 @@ class clicrdv():
                                                   entry['end'],
                                                   entry['id']))
 
+    def filter_clic_appointments(self, to_date):
+        print(to_date)
 
 def main():
     parser = argparse.ArgumentParser()
@@ -125,10 +152,14 @@ def main():
     clic = clicrdv(clic_instance)
     clic.create_new_agenda_entries = args.Force
 
+    if args.date:
+        filter_date = _format_date(args.date[0])
+
     print('Opening session to ClicRDV %s instance...' % clic_instance)
     clic.clic_session_open(auth)
     if clic.ses is not None:
-        clic.get_clic_appointments()
+        #clic.get_clic_appointments()
+        clic.filter_clic_appointments(filter_date)
         clic.print_clic_appointments()
     else:
         return
