@@ -40,8 +40,20 @@ def _format_date(thedate):
     if month not in range(13):
         print('Invalid month range : %s' % month)
         return None
-    return datetime.date(year, month, 1)
+    try:
+        day = thedate[6:8]
+        if day:
+            day = int(day)
+        else:
+            day = 1
+    except ValueError:
+        print('Invalid day format : %s' % thedate[6:8])
+        return None
 
+    if day not in range(32):
+        print('Invalid day range : %s' % thedate[6:8])
+        return None
+    return datetime.date(year, month, day)
 
 def consume_paginate(session, uri):
     """ Consume pagination and yield every items """
@@ -135,11 +147,13 @@ class clicrdv():
                                                   entry['id']))
 
     def filter_clic_appointments(self, to_date):
+        filtered_appointments = []
         for entry in self.clic_appointments:
             (year, month, day) = map(int, entry['start'].split()[0].split('-'))
             entry_date = datetime.date(year, month, day)
             if entry_date < to_date:
-                self.clic_appointments.remove(entry)
+                filtered_appointments += [entry]
+        return filtered_appointments
 
 
 def main():
@@ -166,7 +180,7 @@ def main():
     clic.clic_session_open(auth)
     if clic.ses is not None:
         clic.get_clic_appointments()
-        clic.filter_clic_appointments(clic.filter_date)
+        clic.clic_appointments = clic.filter_clic_appointments(clic.filter_date)
         if clic.delete_appointments:
             clic.print_clic_appointments()
     else:

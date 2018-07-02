@@ -185,7 +185,7 @@ class CleanupClicrdvTests(unittest.TestCase):
         '''
 
         ret = cleanup_clicrdv._format_date('20180621')
-        self.assertEquals(ret, datetime.date(2018, 6, 1))
+        self.assertEquals(ret, datetime.date(2018, 6, 21))
 
     def test__format_date_invalid_year_format(self):
         '''
@@ -221,11 +221,29 @@ class CleanupClicrdvTests(unittest.TestCase):
         '''
         test _format_date with invalid month range
         '''
-
         ret = cleanup_clicrdv._format_date('20182106')
         self.assertEquals(ret, None)
         output = sys.stdout.getvalue().strip()
         self.assertEquals(output, 'Invalid month range : 21')
+
+    def test__format_date_invalid_day_format(self):
+        '''
+        test _format_date with invalid day format
+        '''
+        ret = cleanup_clicrdv._format_date('201806yz')
+        self.assertEquals(ret, None)
+        output = sys.stdout.getvalue().strip()
+        self.assertEquals(output, 'Invalid day format : yz')
+
+    def test__format_date_invalid_day_range(self):
+        '''
+        test _format_date with invalid day range
+        '''
+
+        ret = cleanup_clicrdv._format_date('20180640')
+        self.assertEquals(ret, None)
+        output = sys.stdout.getvalue().strip()
+        self.assertEquals(output, 'Invalid day range : 40')
 
     def test__format_date_year_only(self):
         '''
